@@ -1,39 +1,23 @@
 const socket = io();
-const peers = {};
-let localStream;
+let currentRoom = null;
 
-// Mikrofon akışını başlat
-navigator.mediaDevices.getUserMedia({ audio: true, video: false })
-    .then((stream) => {
-        localStream = stream;
-    })
-    .catch((err) => console.error('Mikrofon hatası:', err));
+// Odaya katıl
+function joinRoom(roomName) {
+    currentRoom = roomName;
+    socket.emit('join-room', roomName);
+}
 
-// Kullanıcı listesini güncel tut
-socket.on('user-joined', (id) => {
-    const list = document.getElementById('participants-list');
-    const item = document.createElement('li');
-    item.id = `user-${id}`;
-    item.textContent = `Kullanıcı: ${id}`;
-    list.appendChild(item);
-});
-
-socket.on('user-disconnected', (id) => {
-    const item = document.getElementById(`user-${id}`);
-    if (item) item.remove();
-});
-
-// Yazılı chat
+// Mesaj gönder
 function sendMessage() {
     const input = document.getElementById('message-input');
     const message = input.value;
-    if (!message.trim()) return;
+    if (!message.trim() || !currentRoom) return;
 
-    socket.emit('message', message);
+    socket.emit('message', { roomName: currentRoom, message });
     input.value = '';
-    displayMessage('Ben', message);
 }
 
+// Mesajları al ve göster
 socket.on('message', ({ user, text }) => {
     displayMessage(user, text);
 });
@@ -45,20 +29,23 @@ function displayMessage(user, text) {
     list.appendChild(item);
 }
 
-// Ekran paylaşımı
-function shareScreen() {
-    navigator.mediaDevices.getDisplayMedia({ video: true })
-        .then((stream) => {
-            const video = document.getElementById('shared-screen');
-            const status = document.getElementById('screen-status');
-            video.srcObject = stream;
-            status.style.display = 'none';
-            video.style.display = 'block';
+// Odadaki kullanıcıları listele
+socket.on('user-joined', (users) => {
+    const list = document.getElementById('participants-list');
+    list.innerHTML = ''; // Mevcut listeyi temizle
+    users.forEach((id) => {
+        const item = document.createElement('li');
+        item.textContent = `Kullanıcı: ${id}`;
+        list.appendChild(item);
+    });
+});
 
-            stream.getVideoTracks()[0].onended = () => {
-                status.style.display = 'block';
-                video.style.display = 'none';
-            };
-        })
-        .catch((err) => console.error('Ekran paylaşımı hatası:', err));
-}
+socket.on('user-left', (users) => {
+    const list = document.getElementById('participants-list');
+    list.innerHTML = ''; // Listeyi tekrar güncelle
+    users.forEach((id) => {
+        const item = document.createElement('li');
+        item.textContent = `Kullanıcı: ${id}`;
+        list.appendChild(item);
+    });
+});

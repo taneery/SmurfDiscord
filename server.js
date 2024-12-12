@@ -6,29 +6,41 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+const rooms = {}; // Odadaki kullanıcıları tutmak için
+
 app.use(express.static('public'));
 
+// Socket.io bağlantısı
 io.on('connection', (socket) => {
-    console.log('Bir kullanıcı bağlandı.');
+    console.log(`Kullanıcı bağlandı: ${socket.id}`);
 
-    socket.on('join', (room) => {
-        socket.join(room);
-        console.log(`${socket.id} odaya katıldı: ${room}`);
-        socket.to(room).emit('user-joined', socket.id);
+    // Kullanıcı odaya katıldığında
+    socket.on('join-room', (roomName) => {
+        socket.join(roomName);
+        if (!rooms[roomName]) rooms[roomName] = [];
+        rooms[roomName].push(socket.id);
+
+        // Oda katılımını diğer kullanıcılara yayınla
+        io.to(roomName).emit('user-joined', rooms[roomName]);
+
+        console.log(`Kullanıcı ${socket.id}, ${roomName} odasına katıldı`);
     });
 
-    socket.on('signal', (data) => {
-        io.to(data.target).emit('signal', {
-            caller: socket.id,
-            signal: data.signal,
-        });
+    // Mesaj gönderildiğinde
+    socket.on('message', ({ roomName, message }) => {
+        io.to(roomName).emit('message', { user: socket.id, text: message });
     });
 
+    // Kullanıcı bağlantıyı kopardığında
     socket.on('disconnect', () => {
-        console.log('Bir kullanıcı ayrıldı.');
-        socket.broadcast.emit('user-disconnected', socket.id);
+        for (const roomName in rooms) {
+            rooms[roomName] = rooms[roomName].filter((id) => id !== socket.id);
+            io.to(roomName).emit('user-left', rooms[roomName]);
+        }
+        console.log(`Kullanıcı ayrıldı: ${socket.id}`);
     });
 });
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Server çalışıyor: http://localhost:${PORT}`));
+server.listen(10000, () => {
+    console.log('Sunucu 10000 portunda çalışıyor');
+});
