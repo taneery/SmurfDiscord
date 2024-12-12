@@ -3,39 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sesli ve Görüntülü Chat</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Real-Time Chat & Screen Share</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        #chat-box {
+            border: 1px solid #ccc;
+            padding: 10px;
+            height: 200px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+        }
+        #users {
+            margin-bottom: 10px;
+        }
+        #shared-screen {
+            display: block;
+            width: 100%;
+            max-height: 300px;
+            border: 1px solid #ccc;
+            margin-top: 10px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Sesli ve Görüntülü Chat</h1>
-
+    <h1>Real-Time Chat & Screen Share</h1>
+    
+    <div id="users">
+        <strong>Odada Olanlar:</strong>
+        <ul id="user-list"></ul>
+    </div>
+    
     <div id="chat">
-        <h2>Ses Odaları</h2>
-        <button onclick="joinRoom('SesOdası1')">Ses Odası 1'e Katıl</button>
-        <button onclick="joinRoom('SesOdası2')">Ses Odası 2'ye Katıl</button>
-    </div>
-
-    <div id="participants">
-        <h2>Odada Olanlar:</h2>
-        <ul id="participants-list"></ul>
-    </div>
-
-    <div id="screen-share">
-        <h2>Ekran Paylaşımı</h2>
-        <div id="screen-container">
-            <p id="screen-status">Kapalıyız</p>
-            <video id="shared-screen" autoplay></video>
-        </div>
-        <button onclick="shareScreen()">Ekranını Paylaş</button>
-    </div>
-
-    <div id="messages">
-        <h2>Yazılı Chat</h2>
-        <ul id="message-list"></ul>
-        <input type="text" id="message-input" placeholder="Mesaj yaz..." />
+        <div id="chat-box"></div>
+        <input type="text" id="chat-input" placeholder="Bir şey yaz..." />
         <button onclick="sendMessage()">Gönder</button>
     </div>
-
+    
+    <div id="controls">
+        <button onclick="startAudio()">Mikrofonu Başlat</button>
+        <button onclick="startCall('SesliSohbet1')">Bağlan</button>
+        <button onclick="startScreenShare()">Ekran Paylaşımını Başlat</button>
+    </div>
+    
+    <audio id="remote-audio" autoplay></audio>
+    <video id="shared-screen" autoplay playsinline></video>
+    
     <script src="/socket.io/socket.io.js"></script>
     <script src="script.js"></script>
 </body>

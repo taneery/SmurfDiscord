@@ -6,38 +6,36 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-const rooms = {}; // Odadaki kullanıcıları tutmak için
-
 app.use(express.static('public'));
 
-// Socket.io bağlantısı
+let users = [];
+
 io.on('connection', (socket) => {
-    console.log(`Kullanıcı bağlandı: ${socket.id}`);
+    console.log('Yeni bir kullanıcı bağlandı:', socket.id);
+    users.push(socket.id);
 
-    // Kullanıcı odaya katıldığında
-    socket.on('join-room', (roomName) => {
-        socket.join(roomName);
-        if (!rooms[roomName]) rooms[roomName] = [];
-        rooms[roomName].push(socket.id);
+    io.emit('user-list', users);
 
-        // Oda katılımını diğer kullanıcılara yayınla
-        io.to(roomName).emit('user-joined', rooms[roomName]);
-
-        console.log(`Kullanıcı ${socket.id}, ${roomName} odasına katıldı`);
+    socket.on('message', (message) => {
+        socket.broadcast.emit('message', message);
     });
 
-    // Mesaj gönderildiğinde
-    socket.on('message', ({ roomName, message }) => {
-        io.to(roomName).emit('message', { user: socket.id, text: message });
+    socket.on('offer', (data) => {
+        socket.broadcast.emit('offer', data);
     });
 
-    // Kullanıcı bağlantıyı kopardığında
+    socket.on('answer', (data) => {
+        socket.broadcast.emit('answer', data);
+    });
+
+    socket.on('ice-candidate', (data) => {
+        socket.broadcast.emit('ice-candidate', data);
+    });
+
     socket.on('disconnect', () => {
-        for (const roomName in rooms) {
-            rooms[roomName] = rooms[roomName].filter((id) => id !== socket.id);
-            io.to(roomName).emit('user-left', rooms[roomName]);
-        }
-        console.log(`Kullanıcı ayrıldı: ${socket.id}`);
+        users = users.filter((id) => id !== socket.id);
+        io.emit('user-list', users);
+        console.log('Kullanıcı ayrıldı:', socket.id);
     });
 });
 
