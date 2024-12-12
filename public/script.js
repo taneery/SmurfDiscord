@@ -47,14 +47,19 @@ function startCall(roomName) {
 
 async function startScreenShare() {
     try {
+        // Ekran paylaşımını al
         screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
         const videoTrack = screenStream.getVideoTracks()[0];
 
-        peerConnection.addTrack(videoTrack, screenStream);
+        // Peer bağlantısına ekran paylaşımı videosunu ekle
+        if (peerConnection) {
+            peerConnection.addTrack(videoTrack, screenStream);
+        }
 
         const videoElement = document.getElementById('shared-screen');
         videoElement.srcObject = screenStream;
 
+        // Ekran paylaşımını diğer tarafa gönder
         socket.emit('screen-share', screenStream);
 
         videoTrack.onended = () => {
@@ -85,6 +90,7 @@ socket.on('ice-candidate', ({ candidate }) => {
     peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
 });
 
+// Chat mesajlarını göster
 function sendMessage() {
     const input = document.getElementById('chat-input');
     const message = input.value;
@@ -92,12 +98,14 @@ function sendMessage() {
     input.value = '';
 }
 
+// Gelen chat mesajlarını ekrana yaz
 socket.on('message', (message) => {
     const chatBox = document.getElementById('chat-box');
     chatBox.innerHTML += `<div>${message}</div>`;
     chatBox.scrollTop = chatBox.scrollHeight;
 });
 
+// Kullanıcı listesini al
 socket.on('user-list', (users) => {
     const userList = document.getElementById('user-list');
     userList.innerHTML = '';
@@ -106,6 +114,7 @@ socket.on('user-list', (users) => {
     });
 });
 
+// Ekran paylaşımını karşıya aktar
 socket.on('screen-share', (stream) => {
     const videoElement = document.getElementById('shared-screen');
     videoElement.srcObject = stream;
