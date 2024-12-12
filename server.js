@@ -6,26 +6,29 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Statik dosyaları sun
 app.use(express.static('public'));
 
-// Kullanıcılar bağlandığında
 io.on('connection', (socket) => {
-    console.log('Bir kullanıcı bağlandı:', socket.id);
+    console.log('Bir kullanıcı bağlandı.');
 
-    // Mesajları diğer kullanıcılara ilet
-    socket.on('message', (data) => {
-        socket.broadcast.emit('message', data);
+    socket.on('join', (room) => {
+        socket.join(room);
+        console.log(`${socket.id} odaya katıldı: ${room}`);
+        socket.to(room).emit('user-joined', socket.id);
     });
 
-    // Kullanıcı ayrıldığında
+    socket.on('signal', (data) => {
+        io.to(data.target).emit('signal', {
+            caller: socket.id,
+            signal: data.signal,
+        });
+    });
+
     socket.on('disconnect', () => {
-        console.log('Bir kullanıcı ayrıldı:', socket.id);
+        console.log('Bir kullanıcı ayrıldı.');
+        socket.broadcast.emit('user-disconnected', socket.id);
     });
 });
 
-// Sunucuyu başlat
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log(`Sunucu çalışıyor: http://localhost:${PORT}`);
-});
+server.listen(PORT, () => console.log(`Server çalışıyor: http://localhost:${PORT}`));

@@ -3,34 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sesli Chat ve Ekran Paylaşımı</title>
-    <style>
-        body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
-        .chat { margin: 20px; padding: 10px; border: 1px solid #ccc; display: inline-block; }
-        #messages { height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; }
-        input { padding: 5px; }
-    </style>
+    <title>Sesli ve Görüntülü Chat</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Sesli Chat ve Ekran Paylaşımı</h1>
+    <h1>Sesli ve Görüntülü Chat</h1>
 
-    <div id="audio-chat-1" class="chat">
-        <h2>Sesli Chat #1</h2>
-        <button onclick="joinAudio(1)">Bağlan</button>
-        <button onclick="leaveAudio(1)">Ayrıl</button>
+    <div id="chat">
+        <h2>Ses Odaları</h2>
+        <button onclick="joinRoom('SesOdası1')">Ses Odası 1'e Katıl</button>
+        <button onclick="joinRoom('SesOdası2')">Ses Odası 2'ye Katıl</button>
     </div>
 
-    <div id="audio-chat-2" class="chat">
-        <h2>Sesli Chat #2</h2>
-        <button onclick="joinAudio(2)">Bağlan</button>
-        <button onclick="leaveAudio(2)">Ayrıl</button>
+    <div id="user-list" class="chat">
+        <h2>Katılanlar</h2>
+        <ul id="users"></ul>
     </div>
 
-    <div id="text-chat" class="chat">
-        <h2>Yazılı Chat</h2>
-        <div id="messages"></div>
-        <input type="text" id="message-input" placeholder="Mesaj yaz...">
-        <button onclick="sendMessage()">Gönder</button>
+    <div id="screen-share" class="chat">
+        <h2>Ekran Paylaşımı</h2>
+        <button onclick="shareScreen()">Ekranını Paylaş</button>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
