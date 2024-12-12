@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sesli Chat ve Ekran Paylaşımı</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
+        .chat { margin: 20px; padding: 10px; border: 1px solid #ccc; display: inline-block; }
+        #messages { height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; }
+        input { padding: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Sesli Chat ve Ekran Paylaşımı</h1>
+
+    <div id="audio-chat-1" class="chat">
+        <h2>Sesli Chat #1</h2>
+        <button onclick="joinAudio(1)">Bağlan</button>
+        <button onclick="leaveAudio(1)">Ayrıl</button>
+    </div>
+
+    <div id="audio-chat-2" class="chat">
+        <h2>Sesli Chat #2</h2>
+        <button onclick="joinAudio(2)">Bağlan</button>
+        <button onclick="leaveAudio(2)">Ayrıl</button>
+    </div>
+
+    <div id="text-chat" class="chat">
+        <h2>Yazılı Chat</h2>
+        <div id="messages"></div>
+        <input type="text" id="message-input" placeholder="Mesaj yaz...">
+        <button onclick="sendMessage()">Gönder</button>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
