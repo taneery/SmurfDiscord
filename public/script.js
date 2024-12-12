@@ -1,135 +1,70 @@
 const socket = io();
+const messageInput = document.getElementById("message-input");
+const sendMessageButton = document.getElementById("send-message");
+const chatBox = document.getElementById("chat-box");
+const startScreenShareButton = document.getElementById("start-screen-share");
+const screenVideo = document.getElementById("screen-video");
+const screenStatus = document.getElementById("screen-status");
+const participantList = document.getElementById("participant-list");
 
-let localStream = null;
-let peerConnection = null;
-let screenStream = null;
-let configuration = {
-    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-};
+let peerConnection = new RTCPeerConnection();
+let screenStream;
 
-async function startAudio() {
-    try {
-        localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-        console.log('Mikrofon akışı başlatıldı.');
-    } catch (err) {
-        console.error('Mikrofon izni alınamadı:', err);
-        alert('Lütfen mikrofon izni verin.');
+// Chat mesajlarını gönder ve al
+sendMessageButton.addEventListener("click", () => {
+    const message = messageInput.value.trim();
+    if (message) {
+        socket.emit("message", message);
+        messageInput.value = "";
     }
-}
-
-function startCall(roomName) {
-    peerConnection = new RTCPeerConnection(configuration);
-
-    if (localStream) {
-        localStream.getTracks().forEach((track) => peerConnection.addTrack(track, localStream));
-    }
-
-    peerConnection.onicecandidate = (event) => {
-        if (event.candidate) {
-            socket.emit('ice-candidate', { roomName, candidate: event.candidate });
-        }
-    };
-
-    peerConnection.ontrack = (event) => {
-        const remoteAudio = document.getElementById('remote-audio');
-        if (remoteAudio.srcObject !== event.streams[0]) {
-            remoteAudio.srcObject = event.streams[0];
-            console.log('Uzak ses akışı bağlandı.');
-        }
-    };
-
-    peerConnection.createOffer()
-        .then((offer) => peerConnection.setLocalDescription(offer))
-        .then(() => {
-            socket.emit('offer', { roomName, offer: peerConnection.localDescription });
-        });
-}
-
-// Ekran paylaşımını başlatma
-async function startScreenShare() {
-    try {
-        screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-
-        // Ekran paylaşımını peer connection'a ekle
-        const videoTrack = screenStream.getVideoTracks()[0];
-        if (peerConnection) {
-            peerConnection.addTrack(videoTrack, screenStream);
-        }
-
-        const videoElement = document.getElementById('shared-screen');
-        videoElement.srcObject = screenStream;
-
-        // Ekran paylaşımını diğer tarafa gönder
-        socket.emit('screen-share', screenStream);
-
-        videoTrack.onended = () => {
-            videoElement.srcObject = null;
-            console.log('Ekran paylaşımı durduruldu.');
-        };
-    } catch (err) {
-        console.error('Ekran paylaşımı başlatılamadı:', err);
-    }
-}
-
-// Fullscreen (tam ekran) fonksiyonu
-function toggleFullscreen() {
-    const element = document.getElementById('shared-screen');
-    if (element.requestFullscreen) {
-        element.requestFullscreen();
-    } else if (element.mozRequestFullScreen) { /* Firefox */
-        element.mozRequestFullScreen();
-    } else if (element.webkitRequestFullscreen) { /* Chrome, Safari & Opera */
-        element.webkitRequestFullscreen();
-    } else if (element.msRequestFullscreen) { /* IE/Edge */
-        element.msRequestFullscreen();
-    }
-}
-
-socket.on('offer', ({ roomName, offer }) => {
-    if (!peerConnection) startCall(roomName);
-
-    peerConnection.setRemoteDescription(new RTCSessionDescription(offer))
-        .then(() => peerConnection.createAnswer())
-        .then((answer) => peerConnection.setLocalDescription(answer))
-        .then(() => {
-            socket.emit('answer', { roomName, answer: peerConnection.localDescription });
-        });
 });
 
-socket.on('answer', ({ answer }) => {
-    peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+socket.on("message", (message) => {
+    const messageElement = document.createElement("p");
+    messageElement.textContent = message;
+    chatBox.appendChild(messageElement);
 });
 
-socket.on('ice-candidate', ({ candidate }) => {
-    peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
-});
-
-// Chat mesajlarını göster
-function sendMessage() {
-    const input = document.getElementById('chat-input');
-    const message = input.value;
-    socket.emit('message', message);
-    input.value = '';
-}
-
-// Gelen chat mesajlarını ekrana yaz
-socket.on('message', (message) => {
-    const chatBox = document.getElementById('chat-box');
-    chatBox.innerHTML += `<div>${message}</div>`;
-    chatBox.scrollTop = chatBox.scrollHeight;
-});
-
-// Kullanıcı listesini al
-socket.on('user-list', (users) => {
-    const userList = document.getElementById('user-list');
-    userList.innerHTML = '';
-    users.forEach((user) => {
-        userList.innerHTML += `<li>${user}</li>`;
+// Katılımcı listesini güncelle
+socket.on("participants", (participants) => {
+    participantList.innerHTML = "";
+    participants.forEach(participant => {
+        const listItem = document.createElement("li");
+        listItem.textContent = participant;
+        participantList.appendChild(listItem);
     });
 });
 
-// Ekran paylaşımını karşıya aktar
-socket.on('screen-share', (stream) => {
-    const videoElement = document.getElementById('shared-screen');
-    videoElement.srcObject = stream;
+// Ekran paylaşımı başlat
+startScreenShareButton.addEventListener("click", () => {
+    navigator.mediaDevices.getDisplayMedia({ video: true })
+        .then(stream => {
+            screenStream = stream;
+            const screenTrack = stream.getVideoTracks()[0];
+            peerConnection.getSenders().forEach(sender => {
+                if (sender.track.kind === "video") {
+                    sender.replaceTrack(screenTrack);
+                }
+            });
+
+            screenVideo.srcObject = stream;
+            screenStatus.textContent = "Ekran Paylaşımı Aktif";
+            screenStatus.style.color = "green";
+
+            // Paylaşım durursa
+            screenTrack.onended = () => {
+                screenStatus.textContent = "Kapalıyız";
+                screenStatus.style.color = "red";
+            };
+        })
+        .catch(err => console.error("Ekran paylaşımı başlatılamadı:", err));
+});
+
+// Tam ekran desteği
+screenVideo.addEventListener("dblclick", () => {
+    if (screenVideo.requestFullscreen) {
+        screenVideo.requestFullscreen();
+    } else {
+        console.error("Tam ekran desteklenmiyor.");
+    }
 });

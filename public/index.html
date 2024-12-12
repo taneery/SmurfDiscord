@@ -4,55 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dostlar Meclisi</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f4f4f4;
-        }
-        #chat-box {
-            border: 1px solid #ccc;
-            padding: 10px;
-            height: 200px;
-            overflow-y: auto;
-            margin-bottom: 10px;
-        }
-        #users {
-            margin-bottom: 10px;
-        }
-        #shared-screen {
-            display: block;
-            width: 100%;
-            max-height: 300px;
-            border: 1px solid #ccc;
-            margin-top: 10px;
-        }
-    </style>
 </head>
 <body>
     <h1>Dostlar Meclisi</h1>
-    
-    <div id="users">
-        <strong>Odada Olanlar:</strong>
-        <ul id="user-list"></ul>
-    </div>
-    
-    <div id="chat">
+    <div id="chat-container">
         <div id="chat-box"></div>
-        <input type="text" id="chat-input" placeholder="Bir şey yaz..." />
-        <button onclick="sendMessage()">Gönder</button>
+        <input id="message-input" type="text" placeholder="Mesajınızı yazın">
+        <button id="send-message">Gönder</button>
     </div>
-    
-    <div id="controls">
-        <button onclick="startAudio()">Mikrofonu Başlat</button>
-        <button onclick="startCall('SesliSohbet1')">Bağlan</button>
-        <button onclick="startScreenShare()">Ekran Paylaşımını Başlat</button>
+    <div id="screen-container">
+        <video id="screen-video" autoplay></video>
+        <button id="start-screen-share">Ekran Paylaşımını Başlat</button>
+        <p id="screen-status">Kapalıyız</p>
     </div>
-    
-    <audio id="remote-audio" autoplay></audio>
-    <video id="shared-screen" autoplay playsinline></video>
-    
+    <div id="participants">
+        <h3>Odada Kimler Var:</h3>
+        <ul id="participant-list"></ul>
+    </div>
     <script src="/socket.io/socket.io.js"></script>
     <script src="script.js"></script>
 </body>
