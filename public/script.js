@@ -9,103 +9,55 @@ navigator.mediaDevices.getUserMedia({ audio: true, video: false })
     })
     .catch((err) => console.error('Mikrofon hatası:', err));
 
-// Odaya katıl
-function joinRoom(room) {
-    socket.emit('join', room);
-    console.log(`${room} odasına katıldınız.`);
+// Kullanıcı listesini güncel tut
+socket.on('user-joined', (id) => {
+    const list = document.getElementById('participants-list');
+    const item = document.createElement('li');
+    item.id = `user-${id}`;
+    item.textContent = `Kullanıcı: ${id}`;
+    list.appendChild(item);
+});
+
+socket.on('user-disconnected', (id) => {
+    const item = document.getElementById(`user-${id}`);
+    if (item) item.remove();
+});
+
+// Yazılı chat
+function sendMessage() {
+    const input = document.getElementById('message-input');
+    const message = input.value;
+    if (!message.trim()) return;
+
+    socket.emit('message', message);
+    input.value = '';
+    displayMessage('Ben', message);
 }
 
-// Yeni kullanıcı bağlandığında Peer oluştur
-socket.on('user-joined', (id) => {
-    const peerConnection = new RTCPeerConnection();
-    peers[id] = peerConnection;
-
-    localStream.getTracks().forEach((track) => {
-        peerConnection.addTrack(track, localStream);
-    });
-
-    peerConnection.ontrack = (event) => {
-        const audioElement = document.createElement('audio');
-        audioElement.srcObject = event.streams[0];
-        audioElement.play();
-        document.body.appendChild(audioElement);
-    };
-
-    peerConnection.onicecandidate = (event) => {
-        if (event.candidate) {
-            socket.emit('signal', { target: id, signal: event.candidate });
-        }
-    };
-
-    peerConnection.createOffer().then((offer) => {
-        peerConnection.setLocalDescription(offer);
-        socket.emit('signal', { target: id, signal: offer });
-    });
-
-    // Kullanıcı listesini güncelle
-    const usersList = document.getElementById('users');
-    const userItem = document.createElement('li');
-    userItem.id = id;
-    userItem.textContent = `Kullanıcı: ${id}`;
-    usersList.appendChild(userItem);
+socket.on('message', ({ user, text }) => {
+    displayMessage(user, text);
 });
 
-// Sinyal iletişimi
-socket.on('signal', (data) => {
-    const peerConnection = peers[data.caller] || new RTCPeerConnection();
-    peers[data.caller] = peerConnection;
-
-    peerConnection.ontrack = (event) => {
-        const audioElement = document.createElement('audio');
-        audioElement.srcObject = event.streams[0];
-        audioElement.play();
-        document.body.appendChild(audioElement);
-    };
-
-    peerConnection.onicecandidate = (event) => {
-        if (event.candidate) {
-            socket.emit('signal', { target: data.caller, signal: event.candidate });
-        }
-    };
-
-    peerConnection.setRemoteDescription(new RTCSessionDescription(data.signal))
-        .then(() => {
-            if (data.signal.type === 'offer') {
-                peerConnection.createAnswer().then((answer) => {
-                    peerConnection.setLocalDescription(answer);
-                    socket.emit('signal', { target: data.caller, signal: answer });
-                });
-            }
-        });
-});
-
-// Kullanıcı ayrıldığında
-socket.on('user-disconnected', (id) => {
-    const userItem = document.getElementById(id);
-    if (userItem) userItem.remove();
-
-    if (peers[id]) {
-        peers[id].close();
-        delete peers[id];
-    }
-});
+function displayMessage(user, text) {
+    const list = document.getElementById('message-list');
+    const item = document.createElement('li');
+    item.textContent = `${user}: ${text}`;
+    list.appendChild(item);
+}
 
 // Ekran paylaşımı
 function shareScreen() {
-    navigator.mediaDevices.getDisplayMedia({ video: true, audio: true })
+    navigator.mediaDevices.getDisplayMedia({ video: true })
         .then((stream) => {
-            const screenTrack = stream.getTracks()[0];
-            for (const id in peers) {
-                const peer = peers[id];
-                const sender = peer.getSenders().find((s) => s.track.kind === 'video');
-                if (sender) sender.replaceTrack(screenTrack);
-            }
-            screenTrack.onended = () => {
-                for (const id in peers) {
-                    const peer = peers[id];
-                    const sender = peer.getSenders().find((s) => s.track.kind === 'video');
-                    if (sender) sender.replaceTrack(localStream.getVideoTracks()[0]);
-                }
+            const video = document.getElementById('shared-screen');
+            const status = document.getElementById('screen-status');
+            video.srcObject = stream;
+            status.style.display = 'none';
+            video.style.display = 'block';
+
+            stream.getVideoTracks()[0].onended = () => {
+                status.style.display = 'block';
+                video.style.display = 'none';
             };
         })
         .catch((err) => console.error('Ekran paylaşımı hatası:', err));
