@@ -45,13 +45,13 @@ function startCall(roomName) {
         });
 }
 
+// Ekran paylaşımını başlatma
 async function startScreenShare() {
     try {
-        // Ekran paylaşımını al
         screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-        const videoTrack = screenStream.getVideoTracks()[0];
 
-        // Peer bağlantısına ekran paylaşımı videosunu ekle
+        // Ekran paylaşımını peer connection'a ekle
+        const videoTrack = screenStream.getVideoTracks()[0];
         if (peerConnection) {
             peerConnection.addTrack(videoTrack, screenStream);
         }
@@ -68,6 +68,20 @@ async function startScreenShare() {
         };
     } catch (err) {
         console.error('Ekran paylaşımı başlatılamadı:', err);
+    }
+}
+
+// Fullscreen (tam ekran) fonksiyonu
+function toggleFullscreen() {
+    const element = document.getElementById('shared-screen');
+    if (element.requestFullscreen) {
+        element.requestFullscreen();
+    } else if (element.mozRequestFullScreen) { /* Firefox */
+        element.mozRequestFullScreen();
+    } else if (element.webkitRequestFullscreen) { /* Chrome, Safari & Opera */
+        element.webkitRequestFullscreen();
+    } else if (element.msRequestFullscreen) { /* IE/Edge */
+        element.msRequestFullscreen();
     }
 }
 
