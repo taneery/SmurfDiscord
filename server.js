@@ -17,7 +17,7 @@ io.on('connection', (socket) => {
     io.emit('user-list', users);
 
     socket.on('message', (message) => {
-        socket.broadcast.emit('message', message);
+        io.emit('message', message);
     });
 
     socket.on('offer', (data) => {
@@ -30,6 +30,10 @@ io.on('connection', (socket) => {
 
     socket.on('ice-candidate', (data) => {
         socket.broadcast.emit('ice-candidate', data);
+    });
+
+    socket.on('screen-share', (stream) => {
+        socket.broadcast.emit('screen-share', stream);
     });
 
     socket.on('disconnect', () => {

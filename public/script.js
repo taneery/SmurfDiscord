@@ -2,6 +2,7 @@ const socket = io();
 
 let localStream = null;
 let peerConnection = null;
+let screenStream = null;
 let configuration = {
     iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
 };
@@ -46,13 +47,15 @@ function startCall(roomName) {
 
 async function startScreenShare() {
     try {
-        const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+        screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
         const videoTrack = screenStream.getVideoTracks()[0];
 
         peerConnection.addTrack(videoTrack, screenStream);
 
         const videoElement = document.getElementById('shared-screen');
         videoElement.srcObject = screenStream;
+
+        socket.emit('screen-share', screenStream);
 
         videoTrack.onended = () => {
             videoElement.srcObject = null;
@@ -101,4 +104,9 @@ socket.on('user-list', (users) => {
     users.forEach((user) => {
         userList.innerHTML += `<li>${user}</li>`;
     });
+});
+
+socket.on('screen-share', (stream) => {
+    const videoElement = document.getElementById('shared-screen');
+    videoElement.srcObject = stream;
 });
